@@ -194,12 +194,14 @@ export class DatabaseStorage implements IStorage {
 
   // Inventory
   async createStockIn(insertStockIn: InsertStockIn): Promise<StockIn> {
-    const [stock] = await db.insert(stockIn).values(insertStockIn).returning();
+    const fiscalYear = new Date(insertStockIn.date || new Date()).getFullYear();
+    const [stock] = await db.insert(stockIn).values({ ...insertStockIn, fiscalYear }).returning();
     return stock;
   }
 
   async createStockOut(insertStockOut: InsertStockOut): Promise<StockOut> {
-    const [stock] = await db.insert(stockOut).values(insertStockOut).returning();
+    const fiscalYear = new Date(insertStockOut.date || new Date()).getFullYear();
+    const [stock] = await db.insert(stockOut).values({ ...insertStockOut, fiscalYear }).returning();
     return stock;
   }
 

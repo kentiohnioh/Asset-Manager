@@ -54,6 +54,7 @@ export const stockIn = pgTable("stock_in", {
   expiryDate: timestamp("expiry_date"),
   notes: text("notes"),
   recordedBy: integer("recorded_by").references(() => users.id).notNull(),
+  fiscalYear: integer("fiscal_year").notNull().default(new Date().getFullYear()),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -66,6 +67,7 @@ export const stockOut = pgTable("stock_out", {
   reason: text("reason").notNull(), // sale, return, damage, other
   notes: text("notes"),
   recordedBy: integer("recorded_by").references(() => users.id).notNull(),
+  fiscalYear: integer("fiscal_year").notNull().default(new Date().getFullYear()),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
