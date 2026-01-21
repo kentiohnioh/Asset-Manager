@@ -86,18 +86,6 @@ export default function Reports() {
             <SelectItem value="monthly">Monthly</SelectItem>
           </SelectContent>
         </Select>
-
-        <Select value={selectedUser} onValueChange={setSelectedUser}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="User" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Users</SelectItem>
-            {users?.map(u => (
-              <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <Tabs defaultValue="movement" className="space-y-6">
