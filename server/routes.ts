@@ -92,7 +92,7 @@ export async function registerRoutes(
   const seed = async () => {
     const existing = await storage.getUserByUsername("admin@gmail.com");
     if (!existing) {
-      const password = await hashPassword("rupp2026");
+      const password = await hashPassword("rupp2025");
       await storage.createUser({ email: "admin@gmail.com", name: "Admin User", password, role: "admin", telegramChatId: "" });
       await storage.createUser({ email: "manager@gmail.com", name: "Manager User", password, role: "manager", telegramChatId: "" });
       await storage.createUser({ email: "stock@gmail.com", name: "Stock Controller", password, role: "stock_controller", telegramChatId: "" });
@@ -276,9 +276,16 @@ export async function registerRoutes(
 
   // Users Management (Admin Only)
   app.get("/api/users", checkRole(['admin']), async (req, res) => {
-    const users = await storage.getUsers();
-    // Don't send passwords
-    res.json(users.map(({ password, ...u }) => u));
+    try {
+      const users = await storage.getUsers();
+      // Don't send passwords
+      res.json(users.map((u: any) => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
   });
 
   app.delete("/api/users/:id", checkRole(['admin']), async (req, res) => {
