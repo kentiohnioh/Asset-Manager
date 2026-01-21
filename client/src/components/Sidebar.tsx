@@ -34,15 +34,17 @@ export function Sidebar() {
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: LayoutDashboard },
-    { label: "Products", href: "/products", icon: Package },
-    { label: "Suppliers", href: "/suppliers", icon: Truck },
-    { label: "Stock In", href: "/stock-in", icon: ArrowDownToLine },
-    { label: "Stock Out", href: "/stock-out", icon: ArrowUpFromLine },
-    { label: "Reports", href: "/reports", icon: BarChart3 },
+    { label: "Products", href: "/products", icon: Package, roles: ['admin', 'manager', 'viewer'] },
+    { label: "Suppliers", href: "/suppliers", icon: Truck, roles: ['admin', 'manager', 'viewer'] },
+    { label: "Stock In", href: "/stock-in", icon: ArrowDownToLine, roles: ['admin', 'manager', 'stock_controller'] },
+    { label: "Stock Out", href: "/stock-out", icon: ArrowUpFromLine, roles: ['admin', 'manager', 'stock_controller'] },
+    { label: "Reports", href: "/reports", icon: BarChart3, roles: ['admin', 'manager', 'viewer'] },
   ];
 
+  const filteredItems = navItems.filter(item => !item.roles || item.roles.includes(user?.role || ''));
+
   if (user?.role === "admin") {
-    navItems.push({ label: "Users", href: "/users", icon: Users });
+    filteredItems.push({ label: "Users", href: "/users", icon: Users });
   }
 
   return (
@@ -61,7 +63,7 @@ export function Sidebar() {
           <SidebarGroupLabel className="px-4">Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="px-2">
-              {navItems.map((item) => (
+              {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild

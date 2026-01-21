@@ -90,13 +90,13 @@ export async function registerRoutes(
 
   // --- Seed Data (Run once on startup) ---
   const seed = async () => {
-    const existing = await storage.getUserByUsername("admin@ics.com");
+    const existing = await storage.getUserByUsername("admin@gmail.com");
     if (!existing) {
-      const password = await hashPassword("rupp2025");
-      await storage.createUser({ email: "admin@ics.com", name: "Admin User", password, role: "admin", telegramChatId: "" });
-      await storage.createUser({ email: "manager@ics.com", name: "Manager User", password, role: "manager", telegramChatId: "" });
-      await storage.createUser({ email: "stock1@ics.com", name: "Stock Controller 1", password, role: "stock_controller", telegramChatId: "" });
-      await storage.createUser({ email: "viewer@ics.com", name: "Viewer User", password, role: "viewer", telegramChatId: "" });
+      const password = await hashPassword("rupp2026");
+      await storage.createUser({ email: "admin@gmail.com", name: "Admin User", password, role: "admin", telegramChatId: "" });
+      await storage.createUser({ email: "manager@gmail.com", name: "Manager User", password, role: "manager", telegramChatId: "" });
+      await storage.createUser({ email: "stock@gmail.com", name: "Stock Controller", password, role: "stock_controller", telegramChatId: "" });
+      await storage.createUser({ email: "viewer@gmail.com", name: "Viewer User", password, role: "viewer", telegramChatId: "" });
       
       // Categories
       const cat1 = await storage.createCategory({ name: "Beverages" });
@@ -154,6 +154,14 @@ export async function registerRoutes(
     res.status(401).json({ message: "Unauthorized" });
   };
 
+  // RBAC Middleware
+  const checkRole = (allowedRoles: string[]) => (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+    const user = req.user as any;
+    if (allowedRoles.includes(user.role)) return next();
+    res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+  };
+
   // Products
   app.get(api.products.list.path, requireAuth, async (req, res) => {
     const products = await storage.getProducts();
@@ -166,7 +174,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.post(api.products.create.path, requireAuth, async (req, res) => {
+  app.post(api.products.create.path, checkRole(['admin', 'manager']), async (req, res) => {
     try {
       const input = api.products.create.input.parse(req.body);
       const product = await storage.createProduct(input);
@@ -176,12 +184,12 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.products.update.path, requireAuth, async (req, res) => {
+  app.put(api.products.update.path, checkRole(['admin', 'manager']), async (req, res) => {
     const product = await storage.updateProduct(Number(req.params.id), req.body);
     res.json(product);
   });
 
-  app.delete(api.products.delete.path, requireAuth, async (req, res) => {
+  app.delete(api.products.delete.path, checkRole(['admin']), async (req, res) => {
     await storage.deleteProduct(Number(req.params.id));
     res.status(204).send();
   });
@@ -192,7 +200,7 @@ export async function registerRoutes(
     res.json(categories);
   });
 
-  app.post(api.categories.create.path, requireAuth, async (req, res) => {
+  app.post(api.categories.create.path, checkRole(['admin', 'manager']), async (req, res) => {
     const category = await storage.createCategory(req.body);
     res.status(201).json(category);
   });
@@ -203,20 +211,25 @@ export async function registerRoutes(
     res.json(suppliers);
   });
 
-  app.post(api.suppliers.create.path, requireAuth, async (req, res) => {
+  app.post(api.suppliers.create.path, checkRole(['admin', 'manager']), async (req, res) => {
     const supplier = await storage.createSupplier(req.body);
     res.status(201).json(supplier);
   });
 
+  app.delete('/api/suppliers/:id', checkRole(['admin']), async (req, res) => {
+    await storage.deleteSupplier(Number(req.params.id));
+    res.status(204).send();
+  });
+
   // Inventory
-  app.post(api.inventory.stockIn.path, requireAuth, async (req, res) => {
+  app.post(api.inventory.stockIn.path, checkRole(['admin', 'manager', 'stock_controller']), async (req, res) => {
     const user = req.user as any;
     const input = { ...req.body, recordedBy: user.id };
     const stock = await storage.createStockIn(input);
     res.status(201).json(stock);
   });
 
-  app.post(api.inventory.stockOut.path, requireAuth, async (req, res) => {
+  app.post(api.inventory.stockOut.path, checkRole(['admin', 'manager', 'stock_controller']), async (req, res) => {
     const user = req.user as any;
     const input = { ...req.body, recordedBy: user.id };
     
@@ -238,9 +251,17 @@ export async function registerRoutes(
   });
 
   app.get(api.inventory.transactions.path, requireAuth, async (req, res) => {
+    const user = req.user as any;
     const limit = req.query.limit ? Number(req.query.limit) : 50;
     const type = req.query.type as 'in' | 'out' | 'all' || 'all';
-    const txs = await storage.getTransactions(limit, type);
+    
+    let txs = await storage.getTransactions(limit, type);
+    
+    // RBAC: Stock Controller only sees their own transactions
+    if (user.role === 'stock_controller') {
+      txs = txs.filter(t => t.recordedBy === user.id);
+    }
+    
     res.json(txs);
   });
 
