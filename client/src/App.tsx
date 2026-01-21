@@ -13,6 +13,8 @@ import StockOut from "@/pages/StockOut";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/Sidebar";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
@@ -29,7 +31,24 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return <Redirect to="/login" />;
   }
 
-  return <Component />;
+  return (
+    <SidebarProvider>
+      <div className="flex h-screen w-full overflow-hidden">
+        <Sidebar />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <SidebarTrigger />
+            <div className="flex items-center gap-4">
+              {/* Additional header actions can go here */}
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-6">
+            <Component />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
 }
 
 function Router() {
