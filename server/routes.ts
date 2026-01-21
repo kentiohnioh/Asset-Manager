@@ -274,5 +274,22 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // Users Management (Admin Only)
+  app.get("/api/users", checkRole(['admin']), async (req, res) => {
+    const users = await storage.getUsers();
+    // Don't send passwords
+    res.json(users.map(({ password, ...u }) => u));
+  });
+
+  app.delete("/api/users/:id", checkRole(['admin']), async (req, res) => {
+    const id = Number(req.params.id);
+    const currentUser = req.user as any;
+    if (id === currentUser.id) {
+      return res.status(400).json({ message: "Cannot delete yourself" });
+    }
+    await storage.deleteUser(id);
+    res.status(204).send();
+  });
+
   return httpServer;
 }

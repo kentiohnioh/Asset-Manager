@@ -11,6 +11,7 @@ import Suppliers from "@/pages/Suppliers";
 import StockIn from "@/pages/StockIn";
 import StockOut from "@/pages/StockOut";
 import Reports from "@/pages/Reports";
+import Users from "@/pages/Users";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -72,6 +73,9 @@ function Router() {
       </Route>
       <Route path="/reports">
         <ProtectedRoute component={Reports} />
+      </Route>
+      <Route path="/users">
+        <ProtectedRoute component={Users} />
       </Route>
       <Route component={NotFound} />
     </Switch>
