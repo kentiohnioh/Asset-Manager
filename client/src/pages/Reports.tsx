@@ -12,7 +12,7 @@ export default function Reports() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-muted/10">
+      <div className="flex h-full w-full items-center justify-center bg-muted/10">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -37,80 +37,77 @@ export default function Reports() {
   }, []) || [];
 
   return (
-    <div className="flex min-h-screen bg-muted/10">
-      <Sidebar />
-      <main className="flex-1 ml-64 p-8 max-w-[calc(100vw-16rem)] overflow-x-hidden">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Reports & Analytics</h1>
-            <p className="text-muted-foreground mt-1">Detailed insights into inventory performance</p>
-          </div>
-          <Button variant="outline" className="gap-2" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" /> Print Report
-          </Button>
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Reports & Analytics</h1>
+          <p className="text-muted-foreground mt-1">Detailed insights into inventory performance</p>
         </div>
+        <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+          <Printer className="h-4 w-4" /> Print Report
+        </Button>
+      </div>
 
-        <Tabs defaultValue="movement" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="movement">Stock Movement</TabsTrigger>
-            <TabsTrigger value="financial">Financial Overview</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="movement" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="movement">Stock Movement</TabsTrigger>
+          <TabsTrigger value="financial">Financial Overview</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="movement">
-            <Card className="shadow-sm border-border/60">
+        <TabsContent value="movement">
+          <Card className="shadow-sm border-border/60">
+            <CardHeader>
+              <CardTitle>Inventory Flow (Last 7 Days)</CardTitle>
+              <CardDescription>Comparison of incoming vs outgoing stock volume</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="in" name="Stock In" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="out" name="Stock Out" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="financial">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
               <CardHeader>
-                <CardTitle>Inventory Flow (Last 7 Days)</CardTitle>
-                <CardDescription>Comparison of incoming vs outgoing stock volume</CardDescription>
+                <CardTitle>Total Inventory Value</CardTitle>
+                <CardDescription>Estimated valuation based on purchase price</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      />
-                      <Legend />
-                      <Bar dataKey="in" name="Stock In" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="out" name="Stock Out" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="text-4xl font-bold font-display text-primary">
+                  ${stats?.totalValue.toLocaleString() || "0.00"}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="financial">
-            <div className="grid grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Total Inventory Value</CardTitle>
-                  <CardDescription>Estimated valuation based on purchase price</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold font-display text-primary">
-                    ${stats?.totalValue.toLocaleString() || "0.00"}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Potential Sales Value</CardTitle>
-                  <CardDescription>Projected revenue from current stock</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold font-display text-green-600">
-                    ${((stats?.totalValue || 0) * 1.3).toLocaleString()} 
-                    {/* Mock calculation for demo */}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+            <Card>
+              <CardHeader>
+                <CardTitle>Potential Sales Value</CardTitle>
+                <CardDescription>Projected revenue from current stock</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold font-display text-green-600">
+                  ${((stats?.totalValue || 0) * 1.3).toLocaleString()} 
+                  {/* Mock calculation for demo */}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

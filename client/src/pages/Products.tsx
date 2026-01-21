@@ -78,122 +78,119 @@ export default function Products() {
   };
 
   return (
-    <div className="flex min-h-screen bg-muted/10">
-      <Sidebar />
-      <main className="flex-1 ml-64 p-8 max-w-[calc(100vw-16rem)] overflow-x-hidden">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Products</h1>
-            <p className="text-muted-foreground mt-1">Manage inventory items</p>
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Products</h1>
+          <p className="text-muted-foreground mt-1">Manage inventory items</p>
+        </div>
+        {(user?.role === 'admin' || user?.role === 'manager') && (
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
+            <Plus className="h-4 w-4" /> Add Product
+          </Button>
+        )}
+      </div>
+
+      <div className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border/60 flex gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search products..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
           </div>
-          {(user?.role === 'admin' || user?.role === 'manager') && (
-            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
-              <Plus className="h-4 w-4" /> Add Product
-            </Button>
-          )}
+          <Button variant="outline" className="gap-2">
+            <Filter className="h-4 w-4" /> Filter
+          </Button>
         </div>
 
-        <div className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-border/60 flex gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search products..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" /> Filter
-            </Button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Stock Level</TableHead>
-                  <TableHead className="text-right">Price (In/Out)</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Stock Level</TableHead>
+                <TableHead className="text-right">Price (In/Out)</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredProducts?.map((product) => (
-                  <TableRow key={product.id} className="hover:bg-muted/20">
-                    <TableCell className="font-medium">
-                      <div>
-                        {product.name}
-                        <p className="text-xs text-muted-foreground">{product.barcode || 'No Barcode'}</p>
+              ) : filteredProducts?.map((product) => (
+                <TableRow key={product.id} className="hover:bg-muted/20">
+                  <TableCell className="font-medium">
+                    <div>
+                      {product.name}
+                      <p className="text-xs text-muted-foreground">{product.barcode || 'No Barcode'}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>{product.categoryName || '-'}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={getStockBadgeVariant(product.currentStock, product.minStockLevel) as any}
+                      className={getStockBadgeClass(product.currentStock, product.minStockLevel)}
+                    >
+                      {product.currentStock} {product.unit}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs">Buy: ${Number(product.defaultPurchasePrice).toFixed(2)}</span>
+                      <span className="font-medium text-green-600">Sell: ${Number(product.defaultSellingPrice).toFixed(2)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {(user?.role === 'admin' || user?.role === 'manager') && (
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => setEditingProduct(product)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </TableCell>
-                    <TableCell>{product.categoryName || '-'}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={getStockBadgeVariant(product.currentStock, product.minStockLevel) as any}
-                        className={getStockBadgeClass(product.currentStock, product.minStockLevel)}
-                      >
-                        {product.currentStock} {product.unit}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground text-xs">Buy: ${Number(product.defaultPurchasePrice).toFixed(2)}</span>
-                        <span className="font-medium text-green-600">Sell: ${Number(product.defaultSellingPrice).toFixed(2)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {(user?.role === 'admin' || user?.role === 'manager') && (
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            onClick={() => setEditingProduct(product)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
+      </div>
 
+      <ProductDialog 
+        open={isCreateOpen} 
+        onOpenChange={setIsCreateOpen} 
+        categories={categories || []}
+      />
+
+      {editingProduct && (
         <ProductDialog 
-          open={isCreateOpen} 
-          onOpenChange={setIsCreateOpen} 
+          open={!!editingProduct} 
+          onOpenChange={(open) => !open && setEditingProduct(null)} 
+          product={editingProduct}
           categories={categories || []}
         />
-
-        {editingProduct && (
-          <ProductDialog 
-            open={!!editingProduct} 
-            onOpenChange={(open) => !open && setEditingProduct(null)} 
-            product={editingProduct}
-            categories={categories || []}
-          />
-        )}
-      </main>
+      )}
     </div>
   );
 }

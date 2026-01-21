@@ -26,48 +26,45 @@ export default function Suppliers() {
   };
 
   return (
-    <div className="flex min-h-screen bg-muted/10">
-      <Sidebar />
-      <main className="flex-1 ml-64 p-8 max-w-[calc(100vw-16rem)]">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Suppliers</h1>
-            <p className="text-muted-foreground mt-1">Manage vendor contacts</p>
-          </div>
-          <SupplierDialog open={open} onOpenChange={setOpen} />
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Suppliers</h1>
+          <p className="text-muted-foreground mt-1">Manage vendor contacts</p>
         </div>
+        <SupplierDialog open={open} onOpenChange={setOpen} />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {suppliers?.map((supplier) => (
-            <Card key={supplier.id} className="shadow-sm hover:shadow-md transition-all">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-lg">{supplier.name}</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {suppliers?.map((supplier) => (
+          <Card key={supplier.id} className="shadow-sm hover:shadow-md transition-all">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Truck className="h-5 w-5" />
                 </div>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(supplier.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p><span className="font-medium text-foreground">Contact:</span> {supplier.contact || '-'}</p>
-                  <p><span className="font-medium text-foreground">Email:</span> {supplier.email || '-'}</p>
-                  <p><span className="font-medium text-foreground">Address:</span> {supplier.address || '-'}</p>
-                  {supplier.notes && <p className="pt-2 italic">"{supplier.notes}"</p>}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {!isLoading && suppliers?.length === 0 && (
-            <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
-              No suppliers found. Add your first one!
-            </div>
-          )}
-        </div>
-      </main>
+                <CardTitle className="text-lg">{supplier.name}</CardTitle>
+              </div>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(supplier.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p><span className="font-medium text-foreground">Contact:</span> {supplier.contact || '-'}</p>
+                <p><span className="font-medium text-foreground">Email:</span> {supplier.email || '-'}</p>
+                <p><span className="font-medium text-foreground">Address:</span> {supplier.address || '-'}</p>
+                {supplier.notes && <p className="pt-2 italic">"{supplier.notes}"</p>}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {!isLoading && suppliers?.length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
+            No suppliers found. Add your first one!
+          </div>
+        )}
+      </div>
     </div>
   );
 }
