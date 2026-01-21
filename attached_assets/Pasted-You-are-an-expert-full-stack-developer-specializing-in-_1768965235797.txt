@@ -1,0 +1,110 @@
+You are an expert full-stack developer specializing in modern, production-ready Next.js + Supabase applications.
+
+Build a COMPLETE, REALISTIC, FULL-STACK **Inventory Control System (ICS)** that can be used in real life by a small supermarket, retail shop, or warehouse, it’s for a private system, so no need to design with public option at the home page registeration — NOT a demo/mockup, NOT presentation slides, NOT a toy project. Make sure there will be no error to configuration to solve while building it for me. And not too complex database.
+
+The system must be professional, secure, modern, user-friendly, and suitable for real daily use.
+
+Core features — implement ALL of them:
+
+Products management (CRUD)
+• name, category_id, barcode (optional), description, min_stock_level (default 10), default_purchase_price, default_selling_price, unit, expiry_days_default (optional)
+
+Suppliers management (CRUD)
+• name, contact, email, address, notes
+
+Stock-In transactions
+• select product, supplier, quantity, purchase_price (default from product), date (auto today), expiry_date, notes
+• recorded_by = current user
+
+Stock-Out transactions
+• select product, quantity, selling_price (default from product), date (auto today), reason (sale / return / damage / other)
+• prevent negative stock (validation error message)
+• recorded_by = current user
+
+Real-time current stock calculation per product
+• current_stock = SUM(stock_in.quantity) - SUM(stock_out.quantity)
+
+Low stock alerts (critical)
+• Dashboard shows red warning list: all products where current_stock <= min_stock_level
+• After every stock-out: if current_stock <= min_stock_level → send Telegram notification to all Admins + Managers
+• Use @supabase/supabase-js for DB + Telegram Bot API (or node-telegram-bot-api)
+
+Roles & Permissions (use NextAuth.js + middleware or Supabase RLS + custom checks)
+
+- Admin: full access (manage users, products, suppliers, delete anything, all reports, settings)
+- Manager: CRUD products & suppliers (but NO delete on core data), record stock in/out, view all reports
+- Stock Controller: only create stock-in/out, view current stock levels + own transactions
+- Viewer: read-only (current stock + reports)
+
+User management (easy demo)
+• Seed 1 Admin, 1 Manager, 3 Stock Controllers, 1 Viewer
+• Default password: "rupp2025"
+• Use email/password auth via Supabase Auth
+
+Modern UI
+• Next.js 14+ App Router
+• Tailwind CSS + shadcn/ui components (or Radix + Tailwind)
+• Responsive, clean dashboard with cards (total products, low stock count, today's in/out, recent transactions)
+• Role-based sidebar navigation (hide forbidden menu items)
+• Tables with search, sort, pagination (use tanstack/react-table)
+• Toast notifications (sonner or react-hot-toast)
+• Sweet confirmation dialogs for delete/dangerous actions
+
+Database: Supabase PostgreSQL (use Supabase JS client)
+Tables (create via Supabase dashboard OR Supabase CLI migrations — provide SQL):
+• users (id, email, name, role: enum['admin','manager','stock_controller','viewer'], telegram_chat_id, created_at)
+• categories (id, name)
+• products (id, name, category_id, barcode?, description, min_stock_level, default_purchase_price, default_selling_price, unit, expiry_days_default?)
+• suppliers (id, name, contact, email, address, notes)
+• stock_in (id, product_id, supplier_id, quantity, purchase_price, date, expiry_date?, notes, user_id, created_at)
+• stock_out (id, product_id, quantity, selling_price, date, reason, user_id, created_at)
+
+Reports (simple pages with filters + export)
+• Daily / Weekly / Monthly / Yearly stock movement
+• Low stock list
+• Profit/loss (selling_price - avg purchase_price) × sold quantity
+• Supplier performance (total purchased amount)
+
+Bonus features
+• Expiry warning on dashboard (products expiring soon)
+• PDF export for reports (use jsPDF or react-pdf)
+
+Technical stack — strictly follow:
+• Next.js 14+ (App Router)
+• TypeScript
+• Supabase (PostgreSQL + Auth)
+• Tailwind CSS + shadcn/ui (or Radix primitives + Tailwind)
+• Authentication: Supabase Auth (email/password)
+• Telegram notifications: node-telegram-bot-api or Telegram Bot API
+• State management: simple React Context or Zustand (no Redux)
+• No Laravel / PHP / Blade — pure Next.js full-stack
+
+Deliverables — give full code structure + key files
+
+1. Project setup steps (create-next-app, install packages, Supabase setup, .env.local example)
+2. Folder structure overview
+3. Supabase schema SQL (tables + RLS policies for row-level security)
+4. NextAuth / Supabase Auth setup (if using NextAuth) or Supabase client setup
+5. Main pages & components:
+   - / (dashboard)
+   - /products, /suppliers, /stock-in, /stock-out, /reports
+   - Login / Register page
+   - Role-based layout / sidebar
+6. API routes / server actions for CRUD + stock calculations + Telegram trigger
+7. Seed script / initial data (users + sample products/suppliers/transactions)
+8. Telegram notification logic
+9. How to run locally (npm run dev, Supabase keys, Telegram bot token & chat IDs)
+10. How to test each role + trigger low-stock alert
+
+Rules:
+• Build a REAL system — usable for actual stock management
+• No presentation slides, no mock data pages, no "demo" landing page
+• Keep it clean, commented, TypeScript safe
+• Use modern Next.js patterns (server components, server actions)
+• Make it easy to set up for a university demo
+
+If need to generate seeder, just do it, no need to ask to accept except create a supabase database.
+Start now.
+First confirm you understand: this must be a real Next.js + Supabase full-stack app (not Laravel, not slides).
+Then start giving code step by step: setup → schema → auth → pages → server logic → notifications.
+GO!
