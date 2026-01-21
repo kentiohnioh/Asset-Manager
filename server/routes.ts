@@ -98,32 +98,35 @@ export async function registerRoutes(
       await storage.createUser({ email: "stock@gmail.com", name: "Stock Controller", password, role: "stock_controller", telegramChatId: "" });
       await storage.createUser({ email: "viewer@gmail.com", name: "Viewer User", password, role: "viewer", telegramChatId: "" });
       
-      // Categories
-      const cat1 = await storage.createCategory({ name: "Beverages" });
-      const cat2 = await storage.createCategory({ name: "Snacks" });
-      const cat3 = await storage.createCategory({ name: "Electronics" });
+      // Check if categories already exist before seeding them
+      const categories = await storage.getCategories();
+      if (categories.length === 0) {
+        const cat1 = await storage.createCategory({ name: "Beverages" });
+        const cat2 = await storage.createCategory({ name: "Snacks" });
+        const cat3 = await storage.createCategory({ name: "Electronics" });
 
-      // Suppliers
-      await storage.createSupplier({ name: "Global Drinks Ltd", contact: "John Doe", email: "john@global.com", address: "123 Ind Park" });
-      await storage.createSupplier({ name: "Tech Wholesalers", contact: "Jane Smith", email: "jane@tech.com", address: "456 Tech Ave" });
+        // Suppliers
+        await storage.createSupplier({ name: "Global Drinks Ltd", contact: "John Doe", email: "john@global.com", address: "123 Ind Park" });
+        await storage.createSupplier({ name: "Tech Wholesalers", contact: "Jane Smith", email: "jane@tech.com", address: "456 Tech Ave" });
 
-      // Products
-      await storage.createProduct({ 
-        name: "Cola 330ml", 
-        categoryId: cat1.id, 
-        minStockLevel: 20, 
-        defaultPurchasePrice: "0.50", 
-        defaultSellingPrice: "1.00",
-        unit: "can"
-      });
-      await storage.createProduct({ 
-        name: "Chips 50g", 
-        categoryId: cat2.id, 
-        minStockLevel: 15, 
-        defaultPurchasePrice: "0.80", 
-        defaultSellingPrice: "1.50",
-        unit: "bag"
-      });
+        // Products
+        await storage.createProduct({ 
+          name: "Cola 330ml", 
+          categoryId: cat1.id, 
+          minStockLevel: 20, 
+          defaultPurchasePrice: "0.50", 
+          defaultSellingPrice: "1.00",
+          unit: "can"
+        });
+        await storage.createProduct({ 
+          name: "Chips 50g", 
+          categoryId: cat2.id, 
+          minStockLevel: 15, 
+          defaultPurchasePrice: "0.80", 
+          defaultSellingPrice: "1.50",
+          unit: "bag"
+        });
+      }
       console.log("Database seeded!");
     }
   };
