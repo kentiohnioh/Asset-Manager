@@ -1,7 +1,7 @@
 import { db } from "./db";
-import { 
+import {
   users, products, suppliers, categories, stockIn, stockOut,
-  type User, type InsertUser, 
+  type User, type InsertUser,
   type Product, type InsertProduct,
   type Supplier, type InsertSupplier,
   type Category, type InsertCategory,
@@ -18,11 +18,11 @@ export interface IStorage {
   getUserByUsername(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   deleteUser(id: number): Promise<void>;
-  
+
   // Categories
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
-  
+
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
   getSupplier(id: number): Promise<Supplier | undefined>;
@@ -41,7 +41,7 @@ export interface IStorage {
   createStockIn(stock: InsertStockIn): Promise<StockIn>;
   createStockOut(stock: InsertStockOut): Promise<StockOut>;
   getTransactions(limit?: number, type?: 'in' | 'out' | 'all'): Promise<any[]>;
-  
+
   // Reports
   getDashboardStats(): Promise<any>;
 }
@@ -113,11 +113,11 @@ export class DatabaseStorage implements IStorage {
       totalIn: sql<number>`coalesce(sum(${stockIn.quantity}), 0)`,
       totalOut: sql<number>`coalesce(sum(${stockOut.quantity}), 0)`,
     })
-    .from(products)
-    .leftJoin(categories, eq(products.categoryId, categories.id))
-    .leftJoin(stockIn, eq(products.id, stockIn.productId))
-    .leftJoin(stockOut, eq(products.id, stockOut.productId))
-    .groupBy(products.id, categories.name);
+      .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
+      .leftJoin(stockIn, eq(products.id, stockIn.productId))
+      .leftJoin(stockOut, eq(products.id, stockOut.productId))
+      .groupBy(products.id, categories.name);
 
     // Grouping bug workaround or just logic adjustment: 
     // If I join both tables, I might get Cartesian product if not careful.
@@ -164,7 +164,7 @@ export class DatabaseStorage implements IStorage {
     `);
 
     if (result.rows.length === 0) return undefined;
-    
+
     const row = result.rows[0];
     return {
       ...row,
@@ -209,7 +209,7 @@ export class DatabaseStorage implements IStorage {
     let query;
     // This is complex to combine efficiently with types, let's do two queries and merge if 'all'
     // Or just simple separate logic
-    
+
     const ins = type === 'out' ? [] : await db.select({
       id: stockIn.id,
       productId: stockIn.productId,
@@ -243,7 +243,7 @@ export class DatabaseStorage implements IStorage {
     const all = [...formattedIns, ...formattedOuts]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, limit);
-      
+
     return all;
   }
 
@@ -251,12 +251,12 @@ export class DatabaseStorage implements IStorage {
     const productsList = await this.getProducts();
     const totalProducts = productsList.length;
     const lowStockCount = productsList.filter(p => p.currentStock <= p.minStockLevel).length;
-    
+
     // Simple valuation: sum(stock * purchase_price)
     const totalValue = productsList.reduce((acc, p) => acc + (p.currentStock * Number(p.defaultPurchasePrice)), 0);
 
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
     // Approximate today's stats (in a real app, use SQL range)
     const txs = await this.getTransactions(100, 'all');
