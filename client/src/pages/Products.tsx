@@ -49,8 +49,8 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const { toast } = useToast();
 
-  const filteredProducts = products?.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredProducts = products?.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.categoryName?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -95,8 +95,8 @@ export default function Products() {
         <div className="p-4 border-b border-border/60 flex gap-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search products..." 
+            <Input
+              placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -135,7 +135,7 @@ export default function Products() {
                   </TableCell>
                   <TableCell>{product.categoryName || '-'}</TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       variant={getStockBadgeVariant(product.currentStock, product.minStockLevel) as any}
                       className={getStockBadgeClass(product.currentStock, product.minStockLevel)}
                     >
@@ -151,17 +151,17 @@ export default function Products() {
                   <TableCell className="text-right">
                     {(user?.role === 'admin' || user?.role === 'manager') && (
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           onClick={() => setEditingProduct(product)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDelete(product.id)}
                         >
@@ -177,16 +177,16 @@ export default function Products() {
         </div>
       </div>
 
-      <ProductDialog 
-        open={isCreateOpen} 
-        onOpenChange={setIsCreateOpen} 
+      <ProductDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
         categories={categories || []}
       />
 
       {editingProduct && (
-        <ProductDialog 
-          open={!!editingProduct} 
-          onOpenChange={(open) => !open && setEditingProduct(null)} 
+        <ProductDialog
+          open={!!editingProduct}
+          onOpenChange={(open) => !open && setEditingProduct(null)}
           product={editingProduct}
           categories={categories || []}
         />
@@ -195,8 +195,8 @@ export default function Products() {
   );
 }
 
-function ProductDialog({ open, onOpenChange, product, categories }: { 
-  open: boolean; 
+function ProductDialog({ open, onOpenChange, product, categories }: {
+  open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: any;
   categories: any[];

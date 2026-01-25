@@ -127,9 +127,12 @@ export const insertStockInSchema = createInsertSchema(stockIn)
   .omit({ id: true, createdAt: true })
   .extend({
     purchasePrice: z.coerce.number().min(0, "Unit cost must be positive"),
-    quantity: z.number().int().min(1, "Quantity must be at least 1"),
-    productId: z.number().int().positive(),
-    recordedBy: z.number().int().positive(),
+    quantity: z.number()
+      .int("Quantity must be a whole number")
+      .min(1, "Quantity must be at least 1")
+      .max(100000, "Cannot add more than 100,000 units at once"), // ← add this
+    productId: z.number().int().positive("Product is required"),
+    recordedBy: z.number().int().positive("User is required"),
     fiscalYear: z.number().int().positive(),
   });
 
@@ -137,9 +140,12 @@ export const insertStockOutSchema = createInsertSchema(stockOut)
   .omit({ id: true, createdAt: true })
   .extend({
     sellingPrice: z.coerce.number().min(0, "Selling price must be positive"),
-    quantity: z.number().int().min(1, "Quantity must be at least 1"),
-    productId: z.number().int().positive(),
-    recordedBy: z.number().int().positive(),
+    quantity: z.number()
+      .int("Quantity must be a whole number")
+      .min(1, "Quantity must be at least 1")
+      .max(100000, "Cannot remove more than 100,000 units at once"), // ← add this
+    productId: z.number().int().positive("Product is required"),
+    recordedBy: z.number().int().positive("User is required"),
     fiscalYear: z.number().int().positive(),
   });
 

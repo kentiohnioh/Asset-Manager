@@ -37,7 +37,7 @@ async function sendTelegramAlert(message: string) {
     console.log("[Telegram] Alert would be sent:", message);
     return;
   }
-  
+
   // Implementation for node-telegram-bot-api would go here
   // For the MVP without keys, we just log.
   console.log(`[Telegram SENT] ${message}`);
@@ -47,7 +47,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // --- Auth Setup ---
   app.use(
     session({
@@ -97,7 +97,7 @@ export async function registerRoutes(
       await storage.createUser({ email: "manager@gmail.com", name: "Manager User", password, role: "manager", telegramChatId: "" });
       await storage.createUser({ email: "stock@gmail.com", name: "Stock Controller", password, role: "stock_controller", telegramChatId: "" });
       await storage.createUser({ email: "viewer@gmail.com", name: "Viewer User", password, role: "viewer", telegramChatId: "" });
-      
+
       // Check if categories already exist before seeding them
       const categories = await storage.getCategories();
       if (categories.length === 0) {
@@ -110,19 +110,19 @@ export async function registerRoutes(
         await storage.createSupplier({ name: "Tech Wholesalers", contact: "Jane Smith", email: "jane@tech.com", address: "456 Tech Ave" });
 
         // Products
-        await storage.createProduct({ 
-          name: "Cola 330ml", 
-          categoryId: cat1.id, 
-          minStockLevel: 20, 
-          defaultPurchasePrice: "0.50", 
+        await storage.createProduct({
+          name: "Cola 330ml",
+          categoryId: cat1.id,
+          minStockLevel: 20,
+          defaultPurchasePrice: "0.50",
           defaultSellingPrice: "1.00",
           unit: "can"
         });
-        await storage.createProduct({ 
-          name: "Chips 50g", 
-          categoryId: cat2.id, 
-          minStockLevel: 15, 
-          defaultPurchasePrice: "0.80", 
+        await storage.createProduct({
+          name: "Chips 50g",
+          categoryId: cat2.id,
+          minStockLevel: 15,
+          defaultPurchasePrice: "0.80",
           defaultSellingPrice: "1.50",
           unit: "bag"
         });
@@ -193,8 +193,31 @@ export async function registerRoutes(
   });
 
   app.delete(api.products.delete.path, checkRole(['admin']), async (req, res) => {
-    await storage.deleteProduct(Number(req.params.id));
-    res.status(204).send();
+    try {
+      const productId = Number(req.params.id);
+
+      // Get product to check stock
+      const product = await storage.getProduct(productId);
+
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      // Prevent delete if stock > 0
+      if (product.currentStock > 0) {
+        return res.status(400).json({
+          message: "Cannot delete product with remaining stock",
+          details: `This product has ${product.currentStock} ${product.unit} in stock. Please process stock out first.`
+        });
+      }
+
+      // Safe to delete
+      await storage.deleteProduct(productId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete product error:", error);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
   });
 
   // Categories
@@ -235,7 +258,7 @@ export async function registerRoutes(
   app.post(api.inventory.stockOut.path, checkRole(['admin', 'manager', 'stock_controller']), async (req, res) => {
     const user = req.user as any;
     const input = { ...req.body, recordedBy: user.id };
-    
+
     // Check stock level
     const product = await storage.getProduct(input.productId);
     if (!product || product.currentStock < input.quantity) {
@@ -257,14 +280,14 @@ export async function registerRoutes(
     const user = req.user as any;
     const limit = req.query.limit ? Number(req.query.limit) : 50;
     const type = req.query.type as 'in' | 'out' | 'all' || 'all';
-    
+
     let txs = await storage.getTransactions(limit, type);
-    
+
     // RBAC: Stock Controller only sees their own transactions
     if (user.role === 'stock_controller') {
       txs = txs.filter(t => t.recordedBy === user.id);
     }
-    
+
     res.json(txs);
   });
 

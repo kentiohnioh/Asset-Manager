@@ -1,4 +1,7 @@
 # Asset-Manager
+feature/update-maximum-stock
+Inventory Control System Project by Group 9, E10, RUPP
+=======
 
 **Full-Stack Inventory Control System**  
 A modern web application for managing products, suppliers, stock movements, and inventory alerts — built for RUPP ICS group project (Group 9, E10).
@@ -84,3 +87,4 @@ git commit -m "Limit maximum quantity to 100000 in stock-in/out"
 
 # 5. Push the new branch to GitHub
 git push --set-upstream origin feature/max-stock-limit
+main
