@@ -70,3 +70,17 @@ Other test accounts (same password):
 manager@gmail.com
 stock@gmail.com
 viewer@gmail.com
+
+# 1. Create and switch to new branch
+git checkout -b feature/max-stock-limit
+
+# 2. (Now make your code changes in VS Code)
+
+# 3. Stage changes
+git add .
+
+# 4. Commit
+git commit -m "Limit maximum quantity to 100000 in stock-in/out"
+
+# 5. Push the new branch to GitHub
+git push --set-upstream origin feature/max-stock-limit
