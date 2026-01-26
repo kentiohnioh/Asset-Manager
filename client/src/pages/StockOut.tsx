@@ -21,7 +21,7 @@ export default function StockOut() {
   const { data: products } = useProducts();
   const stockOutMutation = useStockOut();
   const { toast } = useToast();
-  
+
   const form = useForm<StockOutFormValues>({
     resolver: zodResolver(insertStockOutSchema),
     defaultValues: {
@@ -34,14 +34,13 @@ export default function StockOut() {
 
   const selectedProductId = form.watch("productId");
   const quantity = form.watch("quantity");
-  
+
   const selectedProduct = products?.find(p => p.id === selectedProductId);
-  
+
   useEffect(() => {
-    if (selectedProduct) {
-      form.setValue("sellingPrice", Number(selectedProduct.defaultSellingPrice));
-    }
-  }, [selectedProductId, selectedProduct, form]);
+    form.setValue("recordedBy", 1); // temporary - replace with real user.id from auth later
+    form.setValue("fiscalYear", new Date().getFullYear());
+  }, [form]);
 
   const isStockInsufficient = selectedProduct && quantity > selectedProduct.currentStock;
 
@@ -160,11 +159,11 @@ export default function StockOut() {
                       <FormItem>
                         <FormLabel>Quantity</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            className="h-11 font-medium text-lg" 
-                            {...field} 
-                            onChange={e => field.onChange(Number(e.target.value))} 
+                          <Input
+                            type="number"
+                            className="h-11 font-medium text-lg"
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -179,12 +178,12 @@ export default function StockOut() {
                       <FormItem>
                         <FormLabel>Unit Price ($)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
+                          <Input
+                            type="number"
                             step="0.01"
-                            className="h-11" 
-                            {...field} 
-                            onChange={e => field.onChange(Number(e.target.value))} 
+                            className="h-11"
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -199,10 +198,10 @@ export default function StockOut() {
                       <FormItem className="col-span-2">
                         <FormLabel>Notes (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder="e.g. Sold to Customer X" 
-                            className="resize-none" 
-                            {...field} 
+                          <Textarea
+                            placeholder="e.g. Sold to Customer X"
+                            className="resize-none"
+                            {...field}
                             value={field.value || ""}
                           />
                         </FormControl>
@@ -212,11 +211,15 @@ export default function StockOut() {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   variant="destructive"
                   className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all"
-                  disabled={stockOutMutation.isPending || !!isStockInsufficient}
+                  disabled={
+                    stockOutMutation.isPending ||
+                    !form.formState.isValid ||           // ← add this line (critical!)
+                    isStockInsufficient
+                  }
                 >
                   {stockOutMutation.isPending ? (
                     <>
