@@ -242,10 +242,10 @@ export async function registerRoutes(
     res.status(201).json(supplier);
   });
 
-  app.delete('/api/suppliers/:id', checkRole(['admin']), async (req, res) => {
-    await storage.deleteSupplier(Number(req.params.id));
-    res.status(204).send();
-  });
+  // app.delete('/api/suppliers/:id', checkRole(['admin']), async (req, res) => {
+  //   await storage.deleteSupplier(Number(req.params.id));
+  //   res.status(204).send();
+  // });
 
   // Inventory
   app.post(api.inventory.stockIn.path, checkRole(['admin', 'manager', 'stock_controller']), async (req, res) => {

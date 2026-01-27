@@ -1,12 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Truck, 
-  ArrowDownToLine, 
-  ArrowUpFromLine, 
-  BarChart3, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Package,
+  Truck,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  BarChart3,
+  LogOut,
   Users,
   Settings
 } from "lucide-react";
@@ -50,11 +50,13 @@ export function Sidebar() {
   return (
     <SidebarContainer className="border-r border-border">
       <SidebarHeader className="p-4 border-b border-border/50">
-        <div className="flex items-center gap-3 px-2 py-1">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <h1 className="font-display font-bold text-xl tracking-tight">InventPro</h1>
+        <div className="flex items-center gap-2 px-4 py-6">
+          <img
+            src="/favicon.png"
+            alt="ICS"
+            className="h-8 w-8 rounded-full"
+          />
+          <span className="text-xl font-bold">ICS</span>
         </div>
       </SidebarHeader>
 

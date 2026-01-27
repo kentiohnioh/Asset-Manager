@@ -40,20 +40,14 @@ export default function StockIn() {
   });
 
   useEffect(() => {
-    // Auto-set fiscal year
     form.setValue("fiscalYear", new Date().getFullYear());
 
-    // Auto-set recordedBy with logged-in user ID
-    // Replace with your actual auth hook (useAuth/useUser/useSession etc.)
-    const userId = 1; // temporary hard-coded admin ID (from DB)
-    // const userId = useAuth().user?.id; // real version when auth is ready
-
+    const userId = 1;
     if (userId) {
       form.setValue("recordedBy", userId);
     }
   }, [form]);
 
-  // Auto-fill purchase price when product is selected
   const selectedProductId = form.watch("productId");
 
   useEffect(() => {
