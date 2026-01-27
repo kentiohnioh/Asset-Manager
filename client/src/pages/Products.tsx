@@ -60,7 +60,7 @@ export default function Products() {
         await deleteProduct.mutateAsync(id);
         toast({ title: "Product deleted" });
       } catch (error) {
-        toast({ title: "Failed to delete", variant: "destructive" });
+        toast({ title: "Failed to delete, there must be no stocks available!", variant: "destructive" });
       }
     }
   };
