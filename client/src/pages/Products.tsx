@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useCategories } from "@/hooks/use-inventory";
 import { Sidebar } from "@/components/Sidebar";
@@ -48,6 +49,7 @@ export default function Products() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const filteredProducts = products?.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,13 +57,25 @@ export default function Products() {
   );
 
   const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      try {
-        await deleteProduct.mutateAsync(id);
-        toast({ title: "Product deleted" });
-      } catch (error) {
-        toast({ title: "Failed to delete, there must be no stocks available!", variant: "destructive" });
-      }
+    if (!confirm("Delete this product? (only allowed when stock is 0)")) return;
+
+    try {
+      await deleteProduct.mutateAsync(id);
+
+      // Force refresh products list after successful delete
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      toast({
+        title: "Product deleted successfully",
+        description: "Removed from list (history kept)",
+      });
+    } catch (error: any) {
+      const errMsg = error?.response?.data?.details || error?.message || "Server error";
+      toast({
+        title: "Failed to delete",
+        description: errMsg,
+        variant: "destructive",
+      });
     }
   };
 
