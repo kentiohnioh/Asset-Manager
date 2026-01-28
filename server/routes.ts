@@ -192,30 +192,29 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.delete(api.products.delete.path, checkRole(['admin']), async (req, res) => {
+  app.delete(api.products.delete.path, checkRole(['admin', 'manager']), async (req, res) => {
     try {
       const productId = Number(req.params.id);
 
-      // Get product to check stock
       const product = await storage.getProduct(productId);
-
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // Prevent delete if stock > 0
-      if (product.currentStock > 0) {
+      // Only allow delete if current stock is 0
+      if (product.currentStock !== 0) {
         return res.status(400).json({
-          message: "Cannot delete product with remaining stock",
-          details: `This product has ${product.currentStock} ${product.unit} in stock. Please process stock out first.`
+          message: "Cannot delete product",
+          details: `Current stock is ${product.currentStock} ${product.unit}. Must be 0 to delete.`
         });
       }
 
-      // Safe to delete
       await storage.deleteProduct(productId);
+      console.log(`Product ${productId} soft-deleted successfully`); // ← Add this log to confirm
+
       res.status(204).send();
-    } catch (error) {
-      console.error("Delete product error:", error);
+    } catch (error: any) {
+      console.error("Delete error:", error);
       res.status(500).json({ message: "Failed to delete product" });
     }
   });
