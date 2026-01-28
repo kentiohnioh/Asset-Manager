@@ -1,4 +1,4 @@
-import { useDashboardStats, useLowStock, useTransactions } from "@/hooks/use-inventory";
+import { useDashboardStats, useProducts, useTransactions } from "@/hooks/use-inventory";
 import { Sidebar } from "@/components/Sidebar";
 import { StatCard } from "@/components/StatCard";
 import { Package, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Loader2 } from "lucide-react";
@@ -16,10 +16,15 @@ import { format } from "date-fns";
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: lowStock, isLoading: lowStockLoading } = useLowStock();
+  const { data: products, isLoading: productsLoading } = useProducts(); // Reuse products
   const { data: transactions, isLoading: txLoading } = useTransactions();
 
-  if (statsLoading || lowStockLoading || txLoading) {
+  // Calculate low stock items locally
+  const lowStockItems = products?.filter(p => p.currentStock <= p.minStockLevel) || [];
+
+  const isLoading = statsLoading || productsLoading || txLoading;
+
+  if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-muted/10">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -43,10 +48,14 @@ export default function Dashboard() {
         />
         <StatCard
           title="Low Stock Alerts"
-          value={stats?.lowStockCount || 0}
+          value={lowStockItems.length} // Use local count
           icon={AlertTriangle}
           description="Items below minimum level"
-          className={stats?.lowStockCount && stats.lowStockCount > 0 ? "border-red-200 bg-red-50/30 dark:bg-red-900/10 dark:border-red-900/30" : ""}
+          className={
+            lowStockItems.length > 0
+              ? "border-red-200 bg-red-50/30 dark:bg-red-900/10 dark:border-red-900/30"
+              : ""
+          }
         />
         <StatCard
           title="Today's Stock In"
@@ -83,11 +92,14 @@ export default function Dashboard() {
                 {transactions?.slice(0, 5).map((tx: any) => (
                   <TableRow key={tx.id}>
                     <TableCell>
-                      <Badge variant={tx.type === 'in' ? "outline" : "secondary"} className={
-                        tx.type === 'in' 
-                          ? "border-green-500 text-green-600 bg-green-50" 
-                          : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                      }>
+                      <Badge
+                        variant={tx.type === 'in' ? "outline" : "secondary"}
+                        className={
+                          tx.type === 'in'
+                            ? "border-green-500 text-green-600 bg-green-50"
+                            : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        }
+                      >
                         {tx.type === 'in' ? 'Stock In' : 'Stock Out'}
                       </Badge>
                     </TableCell>
@@ -116,24 +128,28 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Low Stock Items
+              Low Stock Items ({lowStockItems.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {lowStock?.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/10">
-                  <div>
-                    <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Min: {item.minStockLevel}</p>
+              {lowStockItems.length > 0 ? (
+                lowStockItems.slice(0, 5).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/10"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">Min: {item.minStockLevel}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-destructive">{item.currentStock}</p>
+                      <p className="text-xs text-muted-foreground">{item.unit || 'pcs'}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-destructive">{item.currentStock}</p>
-                    <p className="text-xs text-muted-foreground">{item.unit}</p>
-                  </div>
-                </div>
-              ))}
-              {!lowStock?.length && (
+                ))
+              ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100 mb-2">
                     <Package className="h-5 w-5 text-green-600" />
