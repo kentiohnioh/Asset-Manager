@@ -11,17 +11,37 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSupplierSchema } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@shared/routes";
 
 export default function Suppliers() {
-  const { data: suppliers, isLoading } = useSuppliers();
+  const { data: suppliers, isLoading, refetch } = useSuppliers(); // refetch for immediate update
   const deleteSupplier = useDeleteSupplier();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
   const handleDelete = async (id: number) => {
-    if (confirm("Delete this supplier?")) {
+    if (!confirm("Are you sure you want to delete this supplier? This cannot be undone.")) return;
+
+    try {
       await deleteSupplier.mutateAsync(id);
-      toast({ title: "Supplier deleted" });
+
+      // Force immediate refetch + invalidate (double safety)
+      await refetch();
+      queryClient.invalidateQueries({ queryKey: [api.suppliers.list.path] });
+
+      toast({
+        title: "Success",
+        description: "Supplier deleted successfully.",
+      });
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast({
+        title: "Failed to delete supplier",
+        description: err.message || "An error occurred. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -35,36 +55,46 @@ export default function Suppliers() {
         <SupplierDialog open={open} onOpenChange={setOpen} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {suppliers?.map((supplier) => (
-          <Card key={supplier.id} className="shadow-sm hover:shadow-md transition-all">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-lg">{supplier.name}</CardTitle>
-              </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(supplier.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p><span className="font-medium text-foreground">Contact:</span> {supplier.contact || '-'}</p>
-                <p><span className="font-medium text-foreground">Email:</span> {supplier.email || '-'}</p>
-                <p><span className="font-medium text-foreground">Address:</span> {supplier.address || '-'}</p>
-                {supplier.notes && <p className="pt-2 italic">"{supplier.notes}"</p>}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {!isLoading && suppliers?.length === 0 && (
-          <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
-            No suppliers found. Add your first one!
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading suppliers...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {suppliers && suppliers.length > 0 ? (
+            suppliers.map((supplier) => (
+              <Card key={supplier.id} className="shadow-sm hover:shadow-md transition-all">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Truck className="h-5 w-5" />
+                    </div>
+                    <CardTitle className="text-lg">{supplier.name}</CardTitle>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(supplier.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p><span className="font-medium text-foreground">Contact:</span> {supplier.contact || '-'}</p>
+                    <p><span className="font-medium text-foreground">Email:</span> {supplier.email || '-'}</p>
+                    <p><span className="font-medium text-foreground">Address:</span> {supplier.address || '-'}</p>
+                    {supplier.notes && <p className="pt-2 italic">"{supplier.notes}"</p>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
+              No suppliers found. Add your first one!
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -72,7 +102,7 @@ export default function Suppliers() {
 function SupplierDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const createSupplier = useCreateSupplier();
   const { toast } = useToast();
-  
+
   const form = useForm({
     resolver: zodResolver(insertSupplierSchema),
     defaultValues: { name: "", contact: "", email: "", address: "", notes: "" }
@@ -81,33 +111,65 @@ function SupplierDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const onSubmit = async (data: any) => {
     try {
       await createSupplier.mutateAsync(data);
-      toast({ title: "Supplier added" });
+      toast({ title: "Success", description: "Supplier added successfully." });
       onOpenChange(false);
       form.reset();
     } catch (e) {
-      toast({ title: "Error", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add supplier.", variant: "destructive" });
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="gap-2 shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /> Add Supplier</Button>
+        <Button className="gap-2 shadow-lg shadow-primary/20">
+          <Plus className="h-4 w-4" /> Add Supplier
+        </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add New Supplier</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Add New Supplier</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
             )} />
             <FormField control={form.control} name="contact" render={({ field }) => (
-              <FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem>
+                <FormLabel>Contact Person</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
             )} />
             <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl><Input {...field} type="email" /></FormControl>
+                <FormMessage />
+              </FormItem>
             )} />
-            <Button type="submit" className="w-full" disabled={createSupplier.isPending}>Save Supplier</Button>
+            <FormField control={form.control} name="address" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="notes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes (optional)</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <Button type="submit" className="w-full" disabled={createSupplier.isPending}>
+              {createSupplier.isPending ? "Saving..." : "Save Supplier"}
+            </Button>
           </form>
         </Form>
       </DialogContent>
