@@ -29,6 +29,8 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier>;
   deleteSupplier(id: number): Promise<void>;
+  // New method for getting stock-in records by supplier
+  getStockInBySupplier(supplierId: number): Promise<any[]>;
 
   // Products
   getProducts(): Promise<ProductWithStock[]>;
@@ -103,6 +105,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplier(id: number): Promise<void> {
     await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+
+  // NEW: Get all stock-in records for a specific supplier with product details
+  async getStockInBySupplier(supplierId: number): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        si.id,
+        si.product_id,
+        si.quantity,
+        si.date,
+        si.purchase_price,
+        si.notes,
+        p.name as product_name,
+        p.unit,
+        u.name as user_name
+      FROM stock_in si
+      LEFT JOIN products p ON si.product_id = p.id
+      LEFT JOIN users u ON si.recorded_by = u.id
+      WHERE si.supplier_id = ${supplierId}
+      ORDER BY si.date DESC
+    `);
+
+    return result.rows.map(row => ({
+      id: row.id,
+      productId: row.product_id,
+      productName: row.product_name,
+      quantity: Number(row.quantity),
+      unit: row.unit || 'units',
+      date: row.date,
+      purchasePrice: row.purchase_price,
+      notes: row.notes,
+      recordedBy: row.recorded_by,
+      userName: row.user_name
+    }));
   }
 
   // Products

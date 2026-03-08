@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { 
-  InsertProduct, 
-  InsertSupplier, 
-  InsertCategory, 
-  InsertStockIn, 
-  InsertStockOut 
+import {
+  InsertProduct,
+  InsertSupplier,
+  InsertCategory,
+  InsertStockIn,
+  InsertStockOut
 } from "@shared/schema";
 
 // --- Products Hooks ---
@@ -144,17 +144,56 @@ export function useCreateSupplier() {
   });
 }
 
+// FIXED: useDeleteSupplier with better error handling
 export function useDeleteSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.suppliers.delete.path, { id });
-      const res = await fetch(url, { method: api.suppliers.delete.method });
-      if (!res.ok) throw new Error("Failed to delete supplier");
+      console.log(`Deleting supplier at URL: ${url}`);
+
+      const res = await fetch(url, {
+        method: api.suppliers.delete.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Try to parse error response
+      if (!res.ok) {
+        let errorMessage = "Failed to delete supplier";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorData.details || errorMessage;
+          console.error("Server error response:", errorData);
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Parse success response (if any)
+      try {
+        const data = await res.json();
+        return data;
+      } catch (e) {
+        // Return success even if no JSON response
+        return { success: true };
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.suppliers.list.path] });
+    onSuccess: (data) => {
+      console.log("Delete successful:", data);
+      // Invalidate suppliers query to refetch the list
+      queryClient.invalidateQueries({
+        queryKey: [api.suppliers.list.path],
+        exact: true,
+        refetchType: 'all'
+      });
     },
+    onError: (error) => {
+      console.error("Delete supplier error:", error);
+    }
   });
 }
 
@@ -174,7 +213,6 @@ export function useStockIn() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.reports.dashboard.path] });
-      queryClient.invalidateQueries({ queryKey: [api.reports.lowStock.path] });
       queryClient.invalidateQueries({ queryKey: [api.inventory.transactions.path] });
     },
   });
@@ -198,7 +236,6 @@ export function useStockOut() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.reports.dashboard.path] });
-      queryClient.invalidateQueries({ queryKey: [api.reports.lowStock.path] });
       queryClient.invalidateQueries({ queryKey: [api.inventory.transactions.path] });
     },
   });

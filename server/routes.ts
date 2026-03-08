@@ -210,7 +210,7 @@ export async function registerRoutes(
       }
 
       await storage.deleteProduct(productId);
-      console.log(`Product ${productId} soft-deleted successfully`); // ← Add this log to confirm
+      console.log(`Product ${productId} soft-deleted successfully`);
 
       res.status(204).send();
     } catch (error: any) {
@@ -241,10 +241,45 @@ export async function registerRoutes(
     res.status(201).json(supplier);
   });
 
-  // app.delete('/api/suppliers/:id', checkRole(['admin']), async (req, res) => {
-  //   await storage.deleteSupplier(Number(req.params.id));
-  //   res.status(204).send();
-  // });
+  // Delete supplier - Fixed with user-friendly message for stock-in records
+  app.delete('/api/suppliers/:id', checkRole(['admin']), async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      // Validate ID
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supplier ID" });
+      }
+
+      // Check if supplier exists
+      const supplier = await storage.getSupplier(id);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+
+      // Try to delete the supplier
+      await storage.deleteSupplier(id);
+
+      console.log(`✅ Supplier ${id} deleted successfully`);
+      res.status(200).json({ message: "Supplier deleted successfully" });
+    } catch (error: any) {
+      console.error("❌ Error deleting supplier:", error);
+
+      // Check if it's a foreign key constraint error (supplier has stock-in records)
+      if (error.code === '23503' || error.message?.includes('foreign key constraint')) {
+        return res.status(400).json({
+          message: "Cannot delete supplier",
+          details: "This supplier still has stock-in records. Please remove or reassign them before deleting.",
+          code: "SUPPLIER_HAS_STOCK"
+        });
+      }
+
+      res.status(500).json({
+        message: "Failed to delete supplier",
+        error: error.message
+      });
+    }
+  });
 
   // Inventory
   app.post(api.inventory.stockIn.path, checkRole(['admin', 'manager', 'stock_controller']), async (req, res) => {

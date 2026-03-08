@@ -33,16 +33,16 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-muted/30">
       <div className="absolute inset-0 z-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1553413077-190dd305871c?w=1920&q=80')] bg-cover bg-center" />
-      
+
       {/* Descriptive comment for Unsplash image: Warehouse shelves with boxes, muted industrial look */}
-      
+
       <div className="z-10 w-full max-w-md px-4">
         <div className="flex justify-center mb-8">
           <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
             <Package2 className="h-7 w-7 text-primary-foreground" />
           </div>
         </div>
-        
+
         <Card className="shadow-2xl border-border/50 backdrop-blur-sm bg-card/95">
           <CardHeader className="space-y-1 text-center pb-8">
             <CardTitle className="text-2xl font-display font-bold">Welcome back</CardTitle>
@@ -73,8 +73,8 @@ export default function Login() {
                   className="h-11"
                 />
               </div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-11 mt-2 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
                 disabled={isPending}
               >
@@ -90,7 +90,7 @@ export default function Login() {
             </form>
           </CardContent>
         </Card>
-        
+
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Protected System. Authorized Personnel Only.
         </p>
