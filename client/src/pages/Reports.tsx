@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDashboardStats, useTransactions } from "@/hooks/use-inventory";
 import { useQuery } from "@tanstack/react-query";
-import { Sidebar } from "@/components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -9,12 +8,32 @@ import { Loader2, Printer, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// Print styles to hide elements when printing
+const printStyles = `
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+`;
+
 export default function Reports() {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [selectedUser, setSelectedUser] = useState<string>("all");
   const { data: transactions, isLoading: isTxLoading } = useTransactions();
   const { data: stats } = useDashboardStats();
   const { data: users } = useQuery<any[]>({ queryKey: ["/api/users"] });
+
+  // Add print styles to hide no-print elements when printing
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = printStyles;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   if (isTxLoading) {
     return (
@@ -25,7 +44,7 @@ export default function Reports() {
   }
 
   // Filter and group transactions
-  const filteredTxs = transactions?.filter(tx => 
+  const filteredTxs = transactions?.filter(tx =>
     selectedUser === "all" || tx.user === selectedUser
   );
 
@@ -43,7 +62,7 @@ export default function Reports() {
   const chartData = filteredTxs?.reduce((acc: any[], curr) => {
     const key = getPeriodKey(curr.date);
     const existing = acc.find(item => item.key === key);
-    
+
     if (existing) {
       if (curr.type === 'in') existing.in += curr.quantity;
       else existing.out += curr.quantity;
@@ -65,13 +84,15 @@ export default function Reports() {
           <p className="text-muted-foreground mt-1">Detailed insights into inventory performance</p>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+          {/* Added no-print class to hide button when printing */}
+          <Button variant="outline" className="gap-2 no-print" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Print Report
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 bg-card p-4 rounded-xl border border-border/60">
+      {/* Added no-print class to hide filters when printing */}
+      <div className="flex flex-wrap gap-4 bg-card p-4 rounded-xl border border-border/60 no-print">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Filters:</span>
@@ -89,7 +110,7 @@ export default function Reports() {
       </div>
 
       <Tabs defaultValue="movement" className="space-y-6">
-        <TabsList>
+        <TabsList className="no-print"> {/* Added no-print to tabs */}
           <TabsTrigger value="movement">Stock Movement</TabsTrigger>
           <TabsTrigger value="financial">Financial Overview</TabsTrigger>
         </TabsList>
@@ -107,7 +128,7 @@ export default function Reports() {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis dataKey="key" />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                     />
                     <Legend />
@@ -141,8 +162,7 @@ export default function Reports() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold font-display text-green-600">
-                    ${((stats?.totalValue || 0) * 1.3).toLocaleString()} 
-                    {/* Mock calculation for demo */}
+                    ${((stats?.totalValue || 0) * 1.3).toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
