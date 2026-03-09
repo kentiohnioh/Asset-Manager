@@ -4,6 +4,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import './telegram'; // Initialize Telegram bot
+import { setupCronJobs } from './cron'; // Schedule daily tasks
 
 const app = express();
 const httpServer = createServer(app);
@@ -93,6 +95,10 @@ app.use((req, res, next) => {
     () => {
       console.log(`\n\x1b[32m🚀 Server running at:\x1b[0m \x1b[4mhttp://localhost:${port}\x1b[0m\n`);
       console.log(`[express] serving on port ${port}`);
+      
+      // Initialize cron jobs after server starts
+      setupCronJobs();
+      console.log('⏰ Cron jobs scheduled successfully');
     },
   );
 })();

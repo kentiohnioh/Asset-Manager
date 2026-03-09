@@ -268,21 +268,15 @@ export default function StockOut() {
                         <FormControl>
                           <Input
                             type="number"
-                            className="h-11 font-medium text-lg"
+                            min="1"
+                            placeholder="1"
+                            className="h-11"
                             {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                            max={selectedProduct?.currentStock}
+                            onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 1)}
+                            value={field.value}
                           />
                         </FormControl>
                         <FormMessage />
-                        {selectedProduct && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Max {validMaxQuantity.toLocaleString()} units
-                            {selectedProduct.currentStock < MAX_QUANTITY_PER_TRANSACTION
-                              ? ` (only ${selectedProduct.currentStock.toLocaleString()} available)`
-                              : ` per transaction`}
-                          </p>
-                        )}
                       </FormItem>
                     )}
                   />
@@ -297,9 +291,11 @@ export default function StockOut() {
                           <Input
                             type="number"
                             step="0.01"
+                            placeholder="0"
                             className="h-11"
                             {...field}
                             onChange={e => field.onChange(Number(e.target.value))}
+                            value={field.value}
                           />
                         </FormControl>
                         <FormMessage />

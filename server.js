@@ -5,6 +5,8 @@ const { Pool } = pkg;
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import './telegram';
+import { setupCronJobs } from './cron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -10,6 +10,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import MemoryStore from "memorystore";
 import { users } from "@shared/schema";
+import { sendLowStockAlert } from './telegram';
 
 const scryptAsync = promisify(scrypt);
 const SessionStore = MemoryStore(session);
@@ -293,21 +294,49 @@ export async function registerRoutes(
     const user = req.user as any;
     const input = { ...req.body, recordedBy: user.id };
 
-    // Check stock level
-    const product = await storage.getProduct(input.productId);
-    if (!product || product.currentStock < input.quantity) {
-      return res.status(400).json({ message: "Insufficient stock" });
+    try {
+      // Check stock level before transaction
+      const product = await storage.getProduct(input.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      if (product.currentStock < input.quantity) {
+        return res.status(400).json({ message: "Insufficient stock" });
+      }
+
+      // Perform the stock out
+      const stock = await storage.createStockOut(input);
+
+      // Get updated product after transaction
+      const updatedProduct = await storage.getProduct(input.productId);
+
+      // Check if stock is now low or critical
+      if (updatedProduct) {
+        const isLowStock = updatedProduct.currentStock <= updatedProduct.minStockLevel;
+        const isCritical = updatedProduct.currentStock <= 0;
+
+        if (isLowStock || isCritical) {
+          console.log(`🚨 Triggering automatic alert for ${updatedProduct.name}`);
+
+          // Send Telegram alert automatically
+          await sendLowStockAlert(
+            updatedProduct.name,
+            updatedProduct.currentStock,
+            updatedProduct.minStockLevel,
+            updatedProduct.unit || 'units'
+          );
+
+          // Also log to console
+          console.log(`📢 Automatic alert sent for ${updatedProduct.name}`);
+        }
+      }
+
+      res.status(201).json(stock);
+    } catch (error) {
+      console.error('Stock out error:', error);
+      res.status(500).json({ message: "Failed to process stock out" });
     }
-
-    const stock = await storage.createStockOut(input);
-
-    // Check low stock alert after transaction
-    const updatedProduct = await storage.getProduct(input.productId);
-    if (updatedProduct && updatedProduct.currentStock <= updatedProduct.minStockLevel) {
-      sendTelegramAlert(`LOW STOCK ALERT: ${updatedProduct.name} is down to ${updatedProduct.currentStock} ${updatedProduct.unit}. Min level: ${updatedProduct.minStockLevel}`);
-    }
-
-    res.status(201).json(stock);
   });
 
   app.get(api.inventory.transactions.path, requireAuth, async (req, res) => {
