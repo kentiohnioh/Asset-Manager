@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useCategories } from "@/hooks/use-inventory";
+import { useStockTransactions } from "@/hooks/use-stock-transactions";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,6 +39,257 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 type ProductFormValues = z.infer<typeof insertProductSchema>;
 
+// Delete Confirmation Modal
+function DeleteProductWarning({ product, onClose, onConfirm, isDeleting }: {
+  product: any;
+  onClose: () => void;
+  onConfirm: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[450px]">
+        <DialogHeader>
+          <DialogTitle className="text-destructive flex items-center gap-2">
+            <span className="text-2xl">⚠️</span> Delete Product
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/20">
+            <p className="font-medium">Are you sure you want to delete "{product?.name || 'this product'}"?</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              This action cannot be undone. The product will be removed from the list but history will be kept.
+            </p>
+          </div>
+
+          {product?.currentStock > 0 && (
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+              <h4 className="font-medium text-amber-800 mb-2">Warning:</h4>
+              <p className="text-sm text-amber-700">
+                This product has {product.currentStock} {product.unit} in stock.
+                You should transfer or sell this stock before deleting.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              'Delete Product'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Cannot Delete Warning Modal
+function CannotDeleteProductWarning({ product, onClose, onViewStock }: {
+  product: any;
+  onClose: () => void;
+  onViewStock: () => void;
+}) {
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[450px]">
+        <DialogHeader>
+          <DialogTitle className="text-destructive flex items-center gap-2">
+            <span className="text-2xl">⚠️</span> Cannot Delete Product
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/20">
+            <p className="font-medium">"{product?.name || 'This product'}" cannot be deleted.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              This product has stock-in records and cannot be deleted.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+            <h4 className="font-medium text-amber-800 mb-2">What to do:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-amber-700">
+              <li>Remove all stock-in records for this product first</li>
+              <li>Or reassign them to another product</li>
+              <li>Try deleting again after removing the references</li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onViewStock}>
+            View Stock Records
+          </Button>
+          <Button variant="default" onClick={onClose}>
+            Got it
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Cannot Edit Warning Modal
+function ProductEditWarning({ product, onClose, onViewStock }: {
+  product: any;
+  onClose: () => void;
+  onViewStock: () => void;
+}) {
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[450px]">
+        <DialogHeader>
+          <DialogTitle className="text-destructive flex items-center gap-2">
+            <span className="text-2xl">⚠️</span> Cannot Edit Product
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/20">
+            <p className="font-medium">"{product?.name || 'This product'}" cannot be edited.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              This product has stock-in records and cannot be modified.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+            <h4 className="font-medium text-amber-800 mb-2">What to do:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-amber-700">
+              <li>Remove all stock-in records for this product first</li>
+              <li>Or create a new product with the updated information</li>
+              <li>Transfer existing stock to the new product</li>
+              <li>Try editing again after removing the stock references</li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onViewStock}>
+            View Stock Records
+          </Button>
+          <Button variant="default" onClick={onClose}>
+            Got it
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// In your products.tsx, update the StockHistoryModal:
+
+function StockHistoryModal({ product, open, onClose }: {
+  product: any;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data: transactions, isLoading, error } = useStockTransactions(product?.id);
+
+  useEffect(() => {
+    if (product) {
+      console.log('🔍 Loading stock history for:', product.name);
+    }
+  }, [product]);
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Stock History - {product?.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-muted/30 p-4 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Current Stock: <span className="font-medium text-foreground">{product?.currentStock} {product?.unit}</span>
+            </p>
+          </div>
+
+          {/* Status indicators */}
+          <div className="bg-blue-50 p-2 rounded text-xs">
+            <p>🔵 Mode: REAL DATA</p>
+            <p>📊 Product ID: {product?.id}</p>
+            <p>📦 Transactions: {transactions?.length || 0}</p>
+            <p>⏳ Loading: {isLoading ? 'Yes' : 'No'}</p>
+            {error && <p className="text-red-500">❌ Error: {error.message}</p>}
+          </div>
+
+          {/* Stock History Table */}
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Quantity</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead>Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-destructive">
+                      Error loading transactions: {error.message}
+                    </TableCell>
+                  </TableRow>
+                ) : transactions && transactions.length > 0 ? (
+                  transactions.map((transaction: any) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={transaction.type === 'in' ? 'default' : 'secondary'}>
+                          {transaction.type === 'in' ? 'Stock In' : 'Stock Out'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{transaction.quantity} {product?.unit}</TableCell>
+                      <TableCell className="text-right">{transaction.balance} {product?.unit}</TableCell>
+                      <TableCell>{transaction.notes || '-'}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                      No stock history found for this product
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="default" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Products() {
   const { user } = useAuth();
   const { data: products, isLoading } = useProducts();
@@ -48,6 +298,11 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [warningProduct, setWarningProduct] = useState<any>(null); // For edit warning
+  const [deleteWarningProduct, setDeleteWarningProduct] = useState<any>(null); // For delete confirmation
+  const [cannotDeleteProduct, setCannotDeleteProduct] = useState<any>(null); // For cannot delete warning
+  const [stockHistoryProduct, setStockHistoryProduct] = useState<any>(null); // For stock history modal
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -56,11 +311,43 @@ export default function Products() {
     p.categoryName?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this product? (only allowed when stock is 0)")) return;
+  // Check if product has stock records (for edit warning)
+  const checkProductHasStockRecords = (product: any) => {
+    // This checks if the product has any stock activity
+    return product.hasStockRecords || product.totalStockIn > 0 || product.currentStock > 0;
+  };
 
+  // Check if product can be deleted (has no stock records)
+  const canDeleteProduct = (product: any) => {
+    // Product can be deleted only if it has no stock records and current stock is 0
+    return !product.hasStockRecords && product.currentStock === 0;
+  };
+
+  // Handle edit click
+  const handleEditClick = (product: any) => {
+    if (checkProductHasStockRecords(product)) {
+      setWarningProduct(product);
+    } else {
+      setEditingProduct(product);
+    }
+  };
+
+  // Handle delete click
+  const handleDeleteClick = (product: any) => {
+    if (canDeleteProduct(product)) {
+      setDeleteWarningProduct(product); // Show confirmation modal
+    } else {
+      setCannotDeleteProduct(product); // Show cannot delete modal
+    }
+  };
+
+  // Handle confirm delete
+  const handleConfirmDelete = async () => {
+    if (!deleteWarningProduct) return;
+
+    setIsDeleting(true);
     try {
-      await deleteProduct.mutateAsync(id);
+      await deleteProduct.mutateAsync(deleteWarningProduct.id);
 
       // Force refresh products list after successful delete
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -69,6 +356,8 @@ export default function Products() {
         title: "Product deleted successfully",
         description: "Removed from list (history kept)",
       });
+
+      setDeleteWarningProduct(null);
     } catch (error: any) {
       const errMsg = error?.response?.data?.details || error?.message || "Server error";
       toast({
@@ -76,13 +365,31 @@ export default function Products() {
         description: errMsg,
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Handle view stock records
+  const handleViewStockRecords = (product: any) => {
+    // Close warning modals
+    setCannotDeleteProduct(null);
+    setWarningProduct(null);
+
+    // Open stock history modal
+    setStockHistoryProduct(product);
+
+    // Optional: Show toast with additional info
+    toast({
+      title: "Viewing Stock Records",
+      description: `Showing stock history for "${product?.name}"`,
+    });
   };
 
   const getStockBadgeVariant = (current: number, min: number) => {
     if (current <= 0) return "destructive";
-    if (current < min) return "outline"; // We'll style this custom yellow
-    return "default"; // Greenish
+    if (current < min) return "outline";
+    return "default";
   };
 
   const getStockBadgeClass = (current: number, min: number) => {
@@ -169,7 +476,7 @@ export default function Products() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => setEditingProduct(product)}
+                          onClick={() => handleEditClick(product)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -177,7 +484,7 @@ export default function Products() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(product.id)}
+                          onClick={() => handleDeleteClick(product)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -190,6 +497,43 @@ export default function Products() {
           </Table>
         </div>
       </div>
+
+      {/* Edit Warning Modal */}
+      {warningProduct && (
+        <ProductEditWarning
+          product={warningProduct}
+          onClose={() => setWarningProduct(null)}
+          onViewStock={() => handleViewStockRecords(warningProduct)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteWarningProduct && (
+        <DeleteProductWarning
+          product={deleteWarningProduct}
+          onClose={() => setDeleteWarningProduct(null)}
+          onConfirm={handleConfirmDelete}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* Cannot Delete Modal */}
+      {cannotDeleteProduct && (
+        <CannotDeleteProductWarning
+          product={cannotDeleteProduct}
+          onClose={() => setCannotDeleteProduct(null)}
+          onViewStock={() => handleViewStockRecords(cannotDeleteProduct)}
+        />
+      )}
+
+      {/* Stock History Modal */}
+      {stockHistoryProduct && (
+        <StockHistoryModal
+          product={stockHistoryProduct}
+          open={!!stockHistoryProduct}
+          onClose={() => setStockHistoryProduct(null)}
+        />
+      )}
 
       <ProductDialog
         open={isCreateOpen}
