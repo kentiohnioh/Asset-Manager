@@ -91,7 +91,8 @@ app.use((req, res, next) => {
       host: "0.0.0.0",
     },
     () => {
-      log(`serving on port ${port}`);
+      console.log(`\n\x1b[32m🚀 Server running at:\x1b[0m \x1b[4mhttp://localhost:${port}\x1b[0m\n`);
+      console.log(`[express] serving on port ${port}`);
     },
   );
 })();
