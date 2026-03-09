@@ -191,8 +191,7 @@ function ProductEditWarning({ product, onClose, onViewStock }: {
   );
 }
 
-// In your products.tsx, update the StockHistoryModal:
-
+// Stock History Modal - No mock data, using real API
 function StockHistoryModal({ product, open, onClose }: {
   product: any;
   open: boolean;
@@ -200,11 +199,25 @@ function StockHistoryModal({ product, open, onClose }: {
 }) {
   const { data: transactions, isLoading, error } = useStockTransactions(product?.id);
 
+  // Debug logs - remove after confirming it works
   useEffect(() => {
     if (product) {
-      console.log('🔍 Loading stock history for:', product.name);
+      console.log('Fetching stock history for product:', {
+        id: product.id,
+        name: product.name,
+        currentStock: product.currentStock
+      });
     }
   }, [product]);
+
+  useEffect(() => {
+    if (transactions) {
+      console.log('Received transactions:', transactions);
+    }
+    if (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  }, [transactions, error]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -220,13 +233,12 @@ function StockHistoryModal({ product, open, onClose }: {
             </p>
           </div>
 
-          {/* Status indicators */}
+          {/* Debug info - remove after confirming API works */}
           <div className="bg-blue-50 p-2 rounded text-xs">
-            <p>🔵 Mode: REAL DATA</p>
-            <p>📊 Product ID: {product?.id}</p>
-            <p>📦 Transactions: {transactions?.length || 0}</p>
-            <p>⏳ Loading: {isLoading ? 'Yes' : 'No'}</p>
-            {error && <p className="text-red-500">❌ Error: {error.message}</p>}
+            <p>Debug: Product ID: {product?.id}</p>
+            <p>Debug: Transactions count: {transactions?.length || 0}</p>
+            <p>Debug: Loading: {isLoading ? 'Yes' : 'No'}</p>
+            {error && <p className="text-red-500">Error: {error.message}</p>}
           </div>
 
           {/* Stock History Table */}
