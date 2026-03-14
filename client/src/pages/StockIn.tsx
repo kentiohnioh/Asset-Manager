@@ -30,7 +30,7 @@ export default function StockIn() {
   const form = useForm<StockInFormValues>({
     resolver: zodResolver(insertStockInSchema),
     defaultValues: {
-      quantity: 1,
+      quantity: 0,
       purchasePrice: 0,
       notes: "",
       productId: undefined,
@@ -202,12 +202,11 @@ export default function StockIn() {
                             <FormControl>
                               <Input
                                 type="number"
-                                min="1"
-                                placeholder="1"
+                                placeholder="0"
                                 className="h-10"
                                 {...field}
-                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 1)}
-                                value={field.value}
+                                onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                                value={field.value || ''}
                               />
                             </FormControl>
                             <FormMessage />

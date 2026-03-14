@@ -674,7 +674,17 @@ function ProductDialog({ open, onOpenChange, product, categories }: {
                   <FormItem>
                     <FormLabel>Purchase Price</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value === '' ? 0 : Number(e.target.value);
+                          field.onChange(value);
+                        }}
+                        value={field.value === 0 && field.value !== undefined ? '' : field.value}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -687,7 +697,17 @@ function ProductDialog({ open, onOpenChange, product, categories }: {
                   <FormItem>
                     <FormLabel>Selling Price</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value === '' ? 0 : Number(e.target.value);
+                          field.onChange(value);
+                        }}
+                        value={field.value === 0 && field.value !== undefined ? '' : field.value}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -700,7 +720,16 @@ function ProductDialog({ open, onOpenChange, product, categories }: {
                   <FormItem>
                     <FormLabel>Min Stock Alert</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                      <Input
+                        type="number"
+                        placeholder="10"
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value === '' ? 0 : Number(e.target.value);
+                          field.onChange(value);
+                        }}
+                        value={field.value === 0 && field.value !== undefined ? '' : field.value}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
