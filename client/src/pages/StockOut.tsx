@@ -27,7 +27,7 @@ export default function StockOut() {
   const form = useForm<StockOutFormValues>({
     resolver: zodResolver(insertStockOutSchema),
     defaultValues: {
-      quantity: 1,
+      quantity: 0,
       sellingPrice: 0,
       reason: "sale",
       notes: "",
@@ -147,7 +147,7 @@ export default function StockOut() {
                     <Alert variant="destructive" className="py-3">
                       <AlertTitle className="text-sm font-medium">Insufficient Stock!</AlertTitle>
                       <AlertDescription className="text-xs">
-                        You are trying to remove {quantity} units but only {selectedProduct.currentStock} are available.
+                        You are trying to remove {quantity} units but only {selectedProduct.currentStock} are available. Please adjust the quantity or restock before proceeding.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -188,12 +188,11 @@ export default function StockOut() {
                           <FormControl>
                             <Input
                               type="number"
-                              min="1"
-                              placeholder="1"
+                              placeholder="0"
                               className="h-10"
                               {...field}
-                              onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 1)}
-                              value={field.value}
+                              onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                              value={field.value || ''}
                             />
                           </FormControl>
                           <FormMessage />
