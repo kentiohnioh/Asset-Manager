@@ -5,7 +5,7 @@ import { useStockTransactions } from "@/hooks/use-stock-transactions";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Pencil, Trash2, Loader2, Filter } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -191,12 +191,15 @@ function ProductEditWarning({ product, onClose, onViewStock }: {
   );
 }
 
-// Stock History Modal - No mock data, using real API
+// Stock History Modal - With Pagination (10 items per page)
 function StockHistoryModal({ product, open, onClose }: {
   product: any;
   open: boolean;
   onClose: () => void;
 }) {
+  const [txPage, setTxPage] = useState(1);
+  const txItemsPerPage = 5;
+
   const { data: transactions, isLoading, error } = useStockTransactions(product?.id);
 
   // Debug logs - remove after confirming it works
@@ -213,15 +216,33 @@ function StockHistoryModal({ product, open, onClose }: {
   useEffect(() => {
     if (transactions) {
       console.log('Received transactions:', transactions);
+      // Reset to page 1 when new product loads
+      setTxPage(1);
     }
     if (error) {
       console.error('Error fetching transactions:', error);
     }
   }, [transactions, error]);
 
+  // Calculate pagination for transactions
+  const totalTransactions = transactions?.length || 0;
+  const totalTxPages = Math.ceil(totalTransactions / txItemsPerPage);
+  const paginatedTransactions = transactions?.slice(
+    (txPage - 1) * txItemsPerPage,
+    txPage * txItemsPerPage
+  );
+
+  const goToNextTxPage = () => {
+    if (txPage < totalTxPages) setTxPage(txPage + 1);
+  };
+
+  const goToPrevTxPage = () => {
+    if (txPage > 1) setTxPage(txPage - 1);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Stock History - {product?.name}</DialogTitle>
         </DialogHeader>
@@ -266,8 +287,8 @@ function StockHistoryModal({ product, open, onClose }: {
                       Error loading transactions: {error.message}
                     </TableCell>
                   </TableRow>
-                ) : transactions && transactions.length > 0 ? (
-                  transactions.map((transaction: any) => (
+                ) : paginatedTransactions && paginatedTransactions.length > 0 ? (
+                  paginatedTransactions.map((transaction: any) => (
                     <TableRow key={transaction.id}>
                       <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
                       <TableCell>
@@ -290,6 +311,38 @@ function StockHistoryModal({ product, open, onClose }: {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls for Transactions */}
+          {totalTransactions > txItemsPerPage && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {((txPage - 1) * txItemsPerPage) + 1} to {Math.min(txPage * txItemsPerPage, totalTransactions)} of {totalTransactions} transactions
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevTxPage}
+                  disabled={txPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                </Button>
+                <div className="flex items-center px-2">
+                  <span className="text-sm">
+                    Page {txPage} of {totalTxPages}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextTxPage}
+                  disabled={txPage === totalTxPages}
+                >
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -309,6 +362,8 @@ export default function Products() {
   const deleteProduct = useDeleteProduct();
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [warningProduct, setWarningProduct] = useState<any>(null); // For edit warning
   const [deleteWarningProduct, setDeleteWarningProduct] = useState<any>(null); // For delete confirmation
@@ -321,7 +376,28 @@ export default function Products() {
   const filteredProducts = products?.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.categoryName?.toLowerCase().includes(search.toLowerCase())
+  ) || [];
+
+  // Calculate pagination for products
+  const totalProducts = filteredProducts.length;
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   // Check if product has stock records (for edit warning)
   const checkProductHasStockRecords = (product: any) => {
@@ -370,6 +446,11 @@ export default function Products() {
       });
 
       setDeleteWarningProduct(null);
+
+      // Adjust page if current page becomes empty
+      if (paginatedProducts?.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     } catch (error: any) {
       const errMsg = error?.response?.data?.details || error?.message || "Server error";
       toast({
@@ -458,56 +539,96 @@ export default function Products() {
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : filteredProducts?.map((product) => (
-                <TableRow key={product.id} className="hover:bg-muted/20">
-                  <TableCell className="font-medium">
-                    <div>
-                      {product.name}
-                      <p className="text-xs text-muted-foreground">{product.barcode || 'No Barcode'}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.categoryName || '-'}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getStockBadgeVariant(product.currentStock, product.minStockLevel) as any}
-                      className={getStockBadgeClass(product.currentStock, product.minStockLevel)}
-                    >
-                      {product.currentStock} {product.unit}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-sm">
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-xs">Buy: ${Number(product.defaultPurchasePrice).toFixed(2)}</span>
-                      <span className="font-medium text-green-600">Sell: ${Number(product.defaultSellingPrice).toFixed(2)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {(user?.role === 'admin' || user?.role === 'manager') && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => handleEditClick(product)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteClick(product)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+              ) : paginatedProducts.length > 0 ? (
+                paginatedProducts.map((product) => (
+                  <TableRow key={product.id} className="hover:bg-muted/20">
+                    <TableCell className="font-medium">
+                      <div>
+                        {product.name}
+                        <p className="text-xs text-muted-foreground">{product.barcode || 'No Barcode'}</p>
                       </div>
-                    )}
+                    </TableCell>
+                    <TableCell>{product.categoryName || '-'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getStockBadgeVariant(product.currentStock, product.minStockLevel) as any}
+                        className={getStockBadgeClass(product.currentStock, product.minStockLevel)}
+                      >
+                        {product.currentStock} {product.unit}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs">Buy: ${Number(product.defaultPurchasePrice).toFixed(2)}</span>
+                        <span className="font-medium text-green-600">Sell: ${Number(product.defaultSellingPrice).toFixed(2)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {(user?.role === 'admin' || user?.role === 'manager') && (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleEditClick(product)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteClick(product)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    {search ? "No products match your search" : "No products found"}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination Controls for Products */}
+        {totalProducts > itemsPerPage && (
+          <div className="p-4 border-t border-border/60 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} products
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
+              <div className="flex items-center px-2">
+                <span className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Warning Modal */}
